@@ -30,14 +30,14 @@ class YOLOv1(nn.Module):
     Args:
         nn (_type_): _description_
     """
-    def __init__(self, split_size, num_boxes, num_classes):
+    def __init__(self, **kwargs):
         super().__init__()
         
         self.conv_architecture_config_path = Path.cwd()/"config"/"architecture.yaml"
         # convolution block
         self.conv_block = nn.Sequential(*self.get_conv_block(self.conv_architecture_config_path))
         # connecting block
-        self.conn_block = self.get_conn_block(split_size=split_size, num_boxes=num_boxes, num_classes=num_classes)
+        self.conn_block = self.get_conn_block(**kwargs)
 
     # extracting information from yaml file
     def get_conv_block(self, config_path):
@@ -66,7 +66,7 @@ class YOLOv1(nn.Module):
                                                     padding = j["args"]["padding"]))
         return layers
     
-    def get_conn_block(self, split_size, num_boxes, num_classes):
+    def get_conn_block(self, split_size = 7, num_boxes = 2, num_classes = 20):
         S, B, C = split_size, num_boxes, num_classes
         conn_block = nn.Sequential(nn.Flatten(),
                                         nn.Linear(1024*S*S, 4096),
