@@ -9,14 +9,12 @@ def training_step(model: torch.nn.Module,
                   optimizer: torch.optim,
                   device: str):
     train_loss = 0
+    # train mode
+    model.train()
     for index, value in enumerate(dataloader):
         X , Y = value
         # getting the data on given device
         X, Y = X.to(device), Y.to(device)
-        # getting model on given device
-        model.to(device)
-        # train mode
-        model.train()
         # prediction
         Y_pred = model(X)
         # loss
@@ -29,7 +27,7 @@ def training_step(model: torch.nn.Module,
         optimizer.step()
 
         # loss accumulation
-        train_loss += loss
+        train_loss += loss.item()
     
     # total train loss per epoch
     train_loss /= len(dataloader)
@@ -41,21 +39,20 @@ def testing_step(model: torch.nn.Module,
                  device: str):
     
     test_loss = 0
-    for index, value in enumerate(dataloader):
-        X, Y = value
-        # getting the data on given device
-        X, Y = X.to(device), Y.to(device)
-        # getting model on given device
-        model.to(device)
-        # model in eval mode
-        model.eval()
-        with torch.inference_mode():
+    # model in eval mode
+    model.eval()
+    with torch.inference_mode():
+        for index, value in enumerate(dataloader):
+            X, Y = value
+            # getting the data on given device
+            X, Y = X.to(device), Y.to(device)
             Y_pred = model(X)
-        # loss
-        loss = loss_fn(Y_pred, Y)
-        
-        # loss accumulation
-        test_loss += loss
+
+            # loss
+            loss = loss_fn(Y_pred, Y)
+            
+            # loss accumulation
+            test_loss += loss.item()
 
     # total test loss per epoch
     test_loss /= len(dataloader)
@@ -71,6 +68,7 @@ def train(epochs: int,
     epochs_count = []
     train_loss_count = []
     test_loss_count = []
+    # putting model on device
     for epoch in tqdm(range(epochs)):
         train_loss = training_step(model,
                                    train_dataloader,
