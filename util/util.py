@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 
+import matplotlib.pyplot as plt
+
 def intersection_over_union(predictions, target):
     """calculate iou between predictions and targets
 
@@ -43,3 +45,13 @@ transform = transforms.Compose([
     transforms.Resize(size = (448,448)),
     transforms.ToTensor()
 ])
+
+def plot_loss_graph(count):
+    epoch_count = count[0]
+    train_loss_count = count[1]
+    test_loss_count = count[2]
+
+    plt.figure(figsize = (12, 9))
+    plt.plot(epoch_count, train_loss_count, label = "train_loss_curve")
+    plt.plot(epoch_count, test_loss_count, label = "test_loss_curve")
+    plt.title("loss_curve")

@@ -66,7 +66,7 @@ class YOLOv1(nn.Module):
                                                     padding = j["args"]["padding"]))
         return layers
     
-    def get_conn_block(self, split_size = 25, num_boxes = 2, num_classes = 11):
+    def get_conn_block(self, split_size = 7, num_boxes = 2, num_classes = 11):
         S, B, C = split_size, num_boxes, num_classes
         conn_block = nn.Sequential(nn.Flatten(),
                                         nn.Linear(1024*7*7, 16384),
