@@ -14,7 +14,7 @@ class dataset(torch.utils.data.Dataset):
     Args:
         torch (_type_): _description_
     """
-    def __init__(self, img_dir, label_dir, transform = transform, C = 11, S = 25):
+    def __init__(self, img_dir, label_dir, transform = transform, C = 11, S = 7):
         super().__init__()
         self.img_dir = img_dir
         self.label_dir = label_dir
@@ -28,7 +28,7 @@ class dataset(torch.utils.data.Dataset):
 
     # This fn returns the total number of data in dataset
     def __len__(self):
-        return len(self.label_path_list)/2.0
+        return int(len(self.img_path_list)/2.0)
     
     def __getitem__(self, idx):
         return [self.img_parser(idx, self.transform), self.label_parser(idx)]
@@ -57,8 +57,6 @@ class dataset(torch.utils.data.Dataset):
             label_dir (pathlib.Path): path to the label dataset
         """
         label_path = self.label_path_list[2*idx + 1]
-        print(label_path)
-        print("hi")
         step_size = 1.0/self.S
 
         # converting the given label format into the label format needed in the model
@@ -66,7 +64,6 @@ class dataset(torch.utils.data.Dataset):
         with open(label_path, "r") as f:
             for line in f:
                 lbl = [float(x) for x in line.split()]
-                print(lbl)
                 k, l = 0, 0
                 stop = False
                 for i in np.arange(0, 1, step_size):
@@ -75,10 +72,8 @@ class dataset(torch.utils.data.Dataset):
                     elif i <= lbl[1] < i + step_size:                    
                         for j in np.arange(0, 1, step_size):
                             if j <= lbl[2] < j + step_size:
-                                print(f"k = {k} | l = {l}")
                                 zero_label[k, l, int(lbl[0])] = 1.0
                                 zero_label[k, l, self.C:(self.C + 5)] = torch.Tensor([1, lbl[1], lbl[2], lbl[3], lbl[4]])
-                                print(zero_label[k,l])
                                 stop = True
                                 break
                             else:

@@ -4,14 +4,14 @@ import torch.nn as nn
 from util.util import intersection_over_union
 
 class YoloLoss(nn.Module):
-    def __init__(self, S = 25, B = 2, C = 11):
+    def __init__(self, S = 7, B = 2, C = 11):
         super().__init__()
         self.S = S
         self.B = B
         self.C = C
         self.lambda_noobj = 0.5
         self.lambda_coord = 5
-        self.mse = nn.MSELoss(reduction = "sum")
+        self.mse = nn.MSELoss(reduction = "mean")
 
     def forward(self, predictions, target):
         # reshaping the prediction to S by S with (C+2B) features
@@ -36,9 +36,22 @@ class YoloLoss(nn.Module):
         bbox_predictions = exist_obj*(predictions[..., 12:16]*(1 - choosen_bbox) + predictions[..., 17:21]*(choosen_bbox))
         bbox_targets = exist_obj*target[..., 12:16]
 
+        # transform width & height (NO inplace ops)
+        pred_xy = bbox_predictions[..., :2]
+        pred_wh = torch.sign(bbox_predictions[..., 2:4]) * torch.sqrt(
+            torch.abs(bbox_predictions[..., 2:4]) + 1e-6
+        )
+
+        tgt_xy = bbox_targets[..., :2]
+        tgt_wh = torch.sqrt(bbox_targets[..., 2:4] + 1e-6)
+
+        # rebuild tensors
+        bbox_predictions = torch.cat([pred_xy, pred_wh], dim=-1)
+        bbox_targets = torch.cat([tgt_xy, tgt_wh], dim=-1)
+
         # updated the width and height with their square root as per the loss fn in Yolov1 paper
-        bbox_predictions[..., 2:4] = torch.sign(bbox_predictions[..., 2:4]*torch.sqrt(torch.abs(bbox_predictions[...,2:4])))
-        bbox_targets[..., 2:4] = torch.sqrt(bbox_targets[..., 2:4])
+        # bbox_predictions[..., 2:4] = torch.sign(bbox_predictions[..., 2:4]*torch.sqrt(torch.abs(bbox_predictions[...,2:4])))
+        # bbox_targets[..., 2:4] = torch.sqrt(bbox_targets[..., 2:4])
 
         # loss considering bbox paramters where object exist
         box_loss = self.lambda_coord*self.mse(bbox_predictions[..., 0:4], bbox_targets[..., 0:4])
@@ -74,5 +87,6 @@ class YoloLoss(nn.Module):
                 + object_loss         # loss due to object present probability when object exist
                 + no_object_loss      # loss due to object present probability when object doesnt exist
                 + class_loss)         # loss due to class probability 
-        print(f" box loss = {box_loss} | object loss = {object_loss} | no object loss = {no_object_loss} | class_loss = {class_loss}")
+        # print(f" box loss = {box_loss.item()} | object loss = {object_loss.item()} | no object loss = {no_object_loss.item()} | class_loss = {class_loss.item()}")
+        print(f"total loss = {loss.item()}")
         return loss
